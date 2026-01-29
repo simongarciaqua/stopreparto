@@ -62,6 +62,8 @@ export default function Home() {
     const [apiMocks, setApiMocks] = useState<ApiMocks>(initialApiMocks);
     const [messages, setMessages] = useState<Message[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    // Lifted state for API Key
+    const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
 
     // Agent Logic Integration
     const handleSendMessage = async (content: string, apiKey: string, ignoreHistory = false) => {
@@ -205,9 +207,9 @@ export default function Home() {
                         // Resend the last context but force a re-evaluation
                         if (messages.length > 0) {
                             const lastUserText = [...messages].reverse().find(m => m.role === 'user')?.content || "Hola";
-                            handleSendMessage(lastUserText, 'AIzaSyBZO5cajpEeKWvlLeHrnysVnIdpKKQ3KuU', true);
+                            handleSendMessage(lastUserText, apiKey, true);
                         } else {
-                            handleSendMessage("Evalúa mi estado actual", 'AIzaSyBZO5cajpEeKWvlLeHrnysVnIdpKKQ3KuU', true);
+                            handleSendMessage("Evalúa mi estado actual", apiKey, true);
                         }
                     }}
                 />
@@ -220,6 +222,8 @@ export default function Home() {
                     onSendMessage={handleSendMessage}
                     onResetChat={() => setMessages([])}
                     isProcessing={isProcessing}
+                    apiKey={apiKey}
+                    setApiKey={setApiKey}
                 />
             </div>
 

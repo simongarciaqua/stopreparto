@@ -7,12 +7,13 @@ interface ChatInterfaceProps {
     onSendMessage: (content: string, apiKey: string) => Promise<void>;
     onResetChat: () => void;
     isProcessing: boolean;
+    apiKey: string;
+    setApiKey: (key: string) => void;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, onResetChat, isProcessing }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, onResetChat, isProcessing, apiKey, setApiKey }) => {
     const [input, setInput] = useState('');
-    // Environment variable with fallback
-    const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBZO5cajpEeKWvlLeHrnysVnIdpKKQ3KuU');
+    // apiKey state lifted to parent
     const [showSettings, setShowSettings] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
