@@ -11,8 +11,8 @@ interface ChatInterfaceProps {
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, onResetChat, isProcessing }) => {
     const [input, setInput] = useState('');
-    // Default API Key set here
-    const [apiKey, setApiKey] = useState('AIzaSyBZO5cajpEeKWvlLeHrnysVnIdpKKQ3KuU');
+    // Environment variable with fallback
+    const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBZO5cajpEeKWvlLeHrnysVnIdpKKQ3KuU');
     const [showSettings, setShowSettings] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -99,11 +99,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
                         <div
                             key={msg.id}
                             className={`flex gap-4 px-6 py-6 border-b border-gray-50 ${msg.role === 'assistant' ? 'bg-gray-50/30' :
-                                    msg.role === 'system' ? 'bg-slate-900 border-b-slate-800 py-3' : 'bg-white'
+                                msg.role === 'system' ? 'bg-slate-900 border-b-slate-800 py-3' : 'bg-white'
                                 }`}
                         >
                             <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 text-[10px] font-bold uppercase tracking-wider ${msg.role === 'user' ? 'bg-gray-900 text-white' :
-                                    msg.role === 'system' ? 'bg-transparent text-emerald-500' : 'bg-blue-600 text-white'
+                                msg.role === 'system' ? 'bg-transparent text-emerald-500' : 'bg-blue-600 text-white'
                                 }`}>
                                 {msg.role === 'user' ? 'User' : msg.role === 'system' ? '>' : 'Bot'}
                             </div>
