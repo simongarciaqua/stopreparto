@@ -1,26 +1,58 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
+  /* Modern Dev Palette (Linear/Vercel inspired) */
+  --background: #FFFFFF;
   --foreground: #171717;
-}
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --accents-1: #FAFAFA;
+  --accents-2: #EAEAEA;
+  --accents-3: #999999;
+  --accents-4: #888888;
+  --accents-5: #666666;
+  --accents-6: #444444;
+  --accents-7: #333333;
+  --accents-8: #111111;
+
+  --brand: #004B8D;
+  /* Aquaservice Primary, used sparingly */
+  --brand-light: #E6F4FA;
+
+  --success: #0070F3;
+  /* Standard Dev Blue */
+  --error: #FF4444;
+  --warning: #F5A623;
+
+  --border-color: #EAEAEA;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Prepared for dark mode if requested, but keeping light mode clean for now as per "clean" request usually implies crisp white/gray */
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Utilities */
+.border-layout {
+  border: 1px solid var(--border-color);
+}
+
+.panel-header {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background);
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accents-6);
+  letter-spacing: -0.01em;
 }
