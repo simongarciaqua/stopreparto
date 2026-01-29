@@ -1,24 +1,17 @@
-import { ApiMocks, CustomerState } from './types';
+import { ApiMocks } from './types';
 
-export const buildSystemPrompt = (state: CustomerState, mocks: ApiMocks): string => {
-   // Filtrar campos no documentados del estado para no confundir al modelo
-   const safeState = {
-      hasActiveStop: state.hasActiveStop,
-      canRequestStopDelivery: state.canRequestStopDelivery,
-      canCancelStop: state.canCancelStop
-      // selectedReason e inconsistencias se ignoran explícitamente
-   };
+export const buildSystemPrompt = (mocks: ApiMocks): string => {
 
    return `
 Eres un asistente virtual para la gestión de Stop Reparto.
 Tu comportamiento se rige EXCLUSIVAMENTE por el estado actual de la API.
 
-� ESTADO DE LA API (SOURCE OF TRUTH):
+📡 ESTADO DE LA API (SOURCE OF TRUTH):
 \`\`\`json
 ${JSON.stringify(mocks, null, 2)}
 \`\`\`
 
-� RESTRICCIONES OBLIGATORIAS:
+🚫 RESTRICCIONES OBLIGATORIAS:
 1. NO uses información externa a los mocks arriba citados.
 2. NO aceptes ni proceses "motivos" (vacaciones, averías, etc.) que no vengan en la API.
 3. NO inventes reglas de negocio ni precios.
@@ -38,7 +31,7 @@ ${JSON.stringify(mocks, null, 2)}
    - SI es true: Ofrece SOLAMENTE las opciones disponibles en 'options' donde enabled = true.
    - SI es false: Explica que no puedes gestionar la solicitud y ofrece contactar con soporte.
 
-� REGLAS DE RESPUESTA:
+📝 REGLAS DE RESPUESTA:
 - Usa lenguaje natural y directo.
 - NO menciones JSON, flags (true/false), "backend" ni "API".
 - Si algo no se puede hacer, di que el sistema no lo permite en este momento.

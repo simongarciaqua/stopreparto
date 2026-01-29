@@ -26,6 +26,10 @@ const initialApiMocks: ApiMocks = {
         requested: false,
         can_cancel: false,
         anticipated_next_delivery_date: "2026-02-15",
+        next_delivery_date: "2026-02-22", // Default value
+        faq_url: "https://example.com/faq",
+        has_pending_invoices: false,
+        cannot_request_more_contact_phone: "900 123 456",
         options: [
             {
                 id: "plan_completo",
@@ -54,7 +58,7 @@ const initialApiMocks: ApiMocks = {
 };
 
 export default function Home() {
-    const [customerState, setCustomerState] = useState<CustomerState>(initialCustomerState);
+    // const [customerState, setCustomerState] = useState<CustomerState>(initialCustomerState); // REMOVED
     const [apiMocks, setApiMocks] = useState<ApiMocks>(initialApiMocks);
     const [messages, setMessages] = useState<Message[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -74,7 +78,7 @@ export default function Home() {
 
         try {
             // Updated: Direct call to buildSystemPrompt (No Orchestrator)
-            const systemPrompt = buildSystemPrompt(customerState, apiMocks);
+            const systemPrompt = buildSystemPrompt(apiMocks);
 
             const geminiContents = currentMessages
                 .filter(m => m.role !== 'system')
@@ -133,7 +137,7 @@ export default function Home() {
                         get_support_stop_delivery: { ...prev.get_support_stop_delivery, requested: false, can_cancel: false },
                         post_support_stop_delivery_cancel: { success: { message: "Simulación: Stop Cancelado OK" } }
                     }));
-                    setCustomerState(prev => ({ ...prev, hasActiveStop: false, canCancelStop: false }));
+                    // setCustomerState(prev => ({ ...prev, hasActiveStop: false, canCancelStop: false })); // REMOVED
 
                     systemActionMsg = {
                         id: (Date.now() + 2).toString(),
@@ -148,7 +152,7 @@ export default function Home() {
                         get_support_stop_delivery: { ...prev.get_support_stop_delivery, requested: true, can_cancel: true },
                         post_support_stop_delivery_request: { success: { message: `Simulación: Stop Solicitado (${actionParam})` } }
                     }));
-                    setCustomerState(prev => ({ ...prev, hasActiveStop: true, canCancelStop: true }));
+                    // setCustomerState(prev => ({ ...prev, hasActiveStop: true, canCancelStop: true })); // REMOVED
 
                     systemActionMsg = {
                         id: (Date.now() + 2).toString(),
@@ -192,11 +196,11 @@ export default function Home() {
     return (
         <div className="flex h-screen w-full bg-white overflow-hidden text-sm">
 
-            {/* Left Column: Context */}
+            {/* Left Column: Context / API Controller */}
             <div className="w-[300px] flex-shrink-0 border-r border-gray-100 flex flex-col z-20">
                 <CustomerStatePanel
-                    state={customerState}
-                    onChange={setCustomerState}
+                    mocks={apiMocks}
+                    onChangeMocks={setApiMocks}
                     onReevaluate={() => {
                         // Resend the last context but force a re-evaluation
                         if (messages.length > 0) {

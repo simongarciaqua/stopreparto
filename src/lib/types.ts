@@ -16,6 +16,10 @@ export interface ApiMocks {
         requested: boolean;
         can_cancel: boolean;
         anticipated_next_delivery_date: string;
+        next_delivery_date?: string;
+        faq_url?: string;
+        has_pending_invoices?: boolean;
+        cannot_request_more_contact_phone?: string;
         options: Array<{
             id: string;
             title: string;
