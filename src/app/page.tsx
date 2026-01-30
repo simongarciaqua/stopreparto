@@ -63,7 +63,7 @@ export default function Home() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     // Lifted state for API Key
-    const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
+    const [apiKey, setApiKey] = useState('');
 
     // Agent Logic Integration
     const handleSendMessage = async (content: string, apiKey: string, ignoreHistory = false) => {
@@ -82,28 +82,16 @@ export default function Home() {
             // Updated: Direct call to buildSystemPrompt (No Orchestrator)
             const systemPrompt = buildSystemPrompt(apiMocks);
 
-            const geminiContents = currentMessages
-                .filter(m => m.role !== 'system')
-                .map(m => ({
-                    role: m.role === 'assistant' ? 'model' : 'user',
-                    parts: [{ text: m.content }]
-                }));
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-            const response = await fetch(url, {
+            // Call our server-side API instead of Google directly
+            const response = await fetch('/api/chat', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    contents: geminiContents,
-                    system_instruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                    generationConfig: {
-                        temperature: 0.7
-                    }
+                    messages: currentMessages,
+                    systemPrompt: systemPrompt,
+                    apiKey: apiKey // Passing the key from state (can be empty, then server uses its own env)
                 })
             });
 

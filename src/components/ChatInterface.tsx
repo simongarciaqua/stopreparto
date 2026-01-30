@@ -29,12 +29,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
         e.preventDefault();
         if (!input.trim() || isProcessing) return;
 
-        if (!apiKey) {
-            alert("API Key missing. Please check settings.");
-            setShowSettings(true);
-            return;
-        }
-
         const content = input;
         setInput('');
         await onSendMessage(content, apiKey);
