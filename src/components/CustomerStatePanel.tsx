@@ -210,7 +210,7 @@ export const CustomerStatePanel: React.FC<CustomerStatePanelProps> = ({ mocks, o
                         <PropertyRow key={opt.id} label={opt.title} description={`id: ${opt.id}`}>
                             <Switch
                                 checked={opt.enabled}
-                                onChange={(v) => updateMock(['get_support_stop_delivery', 'options', idx, 'enabled'], v)}
+                                onChange={(v) => updateMock(['get_support_stop_delivery', 'options', idx.toString(), 'enabled'], v)}
                             />
                         </PropertyRow>
                     ))}
