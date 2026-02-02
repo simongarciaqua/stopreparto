@@ -9,6 +9,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: { message: "GEMINI_API_KEY is not configured on the server or provided by client" } }, { status: 500 });
         }
 
+        console.log("Using API Key starting with:", apiKey.substring(0, 10) + "...");
+
         const geminiContents = messages
             .filter((m: any) => m.role !== 'system')
             .map((m: any) => ({
