@@ -1,6 +1,6 @@
 import React from 'react';
-import { ApiMocks } from '@/lib/types';
-import { Check, RefreshCw, Layers, Database, Activity } from 'lucide-react';
+import { ApiMocks, ActiveProcess } from '@/lib/types';
+import { Check, RefreshCw, Layers, Database, Activity, Truck, AlertTriangle } from 'lucide-react';
 
 const PropertyRow = ({ label, children, description }: { label: string; children: React.ReactNode; description?: string }) => (
     <div className="flex items-center justify-between py-3">
@@ -27,33 +27,46 @@ const SectionCard = ({ title, icon: Icon, children }: { title: string; icon: any
 );
 
 // High Contrast Switch
-const Switch = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
-    <button
-        onClick={() => onChange(!checked)}
-        // Using inline styles for colors to guarantee visibility if Tailwind is stripping classes
-        style={{ backgroundColor: checked ? '#22c55e' : '#ef4444' }}
-        className={`group relative inline-flex h-6 w-12 items-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500`}
-    >
-        <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-7' : 'translate-x-1'
-                }`}
-        />
-        <span className={`absolute text-[8px] font-bold text-white ${checked ? 'left-1.5' : 'right-1.5'}`}>
-            {checked ? '' : ''}
-        </span>
-    </button>
-);
+const Switch = ({ checked, onChange, color = 'green', offColor = 'gray' }: { checked: boolean; onChange: (v: boolean) => void, color?: 'green' | 'red' | 'blue' | 'orange', offColor?: 'gray' | 'red' }) => {
+    const bgColors = {
+        green: checked ? '#22c55e' : (offColor === 'red' ? '#ef4444' : '#e5e7eb'), // Custom logic for Off=Red
+        red: checked ? '#ef4444' : '#e5e7eb',
+        blue: checked ? '#3b82f6' : '#e5e7eb',
+        orange: checked ? '#f97316' : (offColor === 'red' ? '#ef4444' : '#e5e7eb')
+    };
+
+    // We can simplify this: 
+    // If checked -> Use 'color'
+    // If unchecked -> Use 'offColor' (default gray)
+
+    const activeColor = checked
+        ? (color === 'green' ? '#22c55e' : color === 'red' ? '#ef4444' : color === 'blue' ? '#3b82f6' : '#f97316')
+        : (offColor === 'red' ? '#ef4444' : '#e5e7eb');
+
+    return (
+        <button
+            onClick={() => onChange(!checked)}
+            style={{ backgroundColor: activeColor }}
+            className={`group relative inline-flex h-6 w-12 items-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1`}
+        >
+            <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+            />
+        </button>
+    );
+};
 
 interface CustomerStatePanelProps {
     mocks: ApiMocks;
+    activeProcess: ActiveProcess;
     onChangeMocks: (newMocks: ApiMocks) => void;
     onReevaluate: () => void;
 }
 
-export const CustomerStatePanel: React.FC<CustomerStatePanelProps> = ({ mocks, onChangeMocks, onReevaluate }) => {
+export const CustomerStatePanel: React.FC<CustomerStatePanelProps> = ({ mocks, activeProcess, onChangeMocks, onReevaluate }) => {
 
     const updateMock = (path: string[], value: any) => {
-        // Deep clone for immutability
         const newMocks = JSON.parse(JSON.stringify(mocks));
         let current = newMocks;
         for (let i = 0; i < path.length - 1; i++) {
@@ -63,7 +76,6 @@ export const CustomerStatePanel: React.FC<CustomerStatePanelProps> = ({ mocks, o
         onChangeMocks(newMocks);
     };
 
-    // New helper for batch updates to avoid race conditions
     const updateMultipleMocks = (updates: { path: string[], value: any }[]) => {
         const newMocks = JSON.parse(JSON.stringify(mocks));
         updates.forEach(({ path, value }) => {
@@ -76,9 +88,8 @@ export const CustomerStatePanel: React.FC<CustomerStatePanelProps> = ({ mocks, o
         onChangeMocks(newMocks);
     };
 
-
-    // Helper scenarios that set the FULL mock state to consistent values
-    const scenarios = [
+    // --- STOP REPARTO SCENARIOS ---
+    const stopScenarios = [
         {
             name: "Usuario Estándar",
             description: "Puede solicitar stop",
@@ -114,16 +125,49 @@ export const CustomerStatePanel: React.FC<CustomerStatePanelProps> = ({ mocks, o
                 m.get_support_stop_delivery.can_cancel = false;
                 onChangeMocks(m);
             }
+        }
+    ];
+
+    // --- URGENT DELIVERY SCENARIOS ---
+    const urgentScenarios = [
+        {
+            name: "Usuario Estándar",
+            description: "Limpio, sin facturas",
+            apply: () => {
+                const m = JSON.parse(JSON.stringify(mocks));
+                if (m.delivery_config) {
+                    m.delivery_config.viewConfiguration.showUrgentDelivery = "VISIBLE";
+                }
+                if (m.delivery_info) {
+                    m.delivery_info.facturas_pendientes = 0;
+                    m.delivery_info.current_order = undefined;
+                }
+                onChangeMocks(m);
+            }
         },
         {
             name: "Usuario Bloqueado",
-            description: "No puede hacer nada",
+            description: "Facturas pendientes",
             apply: () => {
                 const m = JSON.parse(JSON.stringify(mocks));
-                m.stop_delivery.requested = false;
-                m.get_support_stop_delivery.requested = false;
-                m.get_support_stop_delivery.can_request_stop_delivery = false;
-                m.get_support_stop_delivery.can_cancel = false;
+                if (m.delivery_info) {
+                    m.delivery_info.facturas_pendientes = 1;
+                }
+                onChangeMocks(m);
+            }
+        },
+        {
+            name: "Pedido en Curso",
+            description: "Ya tiene un pedido",
+            apply: () => {
+                const m = JSON.parse(JSON.stringify(mocks));
+                if (m.delivery_info) {
+                    m.delivery_info.current_order = {
+                        documentNumber: "123456",
+                        documentDate: "2026-02-03",
+                        products: [{ id: "B20", quantity: 2 }]
+                    };
+                }
                 onChangeMocks(m);
             }
         }
@@ -142,92 +186,135 @@ export const CustomerStatePanel: React.FC<CustomerStatePanelProps> = ({ mocks, o
                     >
                         <RefreshCw size={14} />
                     </button>
-                    <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                    <div className={`h-2 w-2 rounded-full shadow-[0_0_8px] ${activeProcess === 'STOP_REPARTO' ? 'bg-red-500 shadow-red-500/40' : activeProcess === 'AVISO_URGENTE' ? 'bg-orange-500 shadow-orange-500/40' : 'bg-gray-400'}`} />
                 </div>
             </div>
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto w-full flex flex-col p-4">
 
-                {/* Scenarios Section */}
-                <SectionCard title="Escenarios Rápidos" icon={Layers}>
-                    <div className="grid grid-cols-1 gap-2">
-                        {scenarios.map((s) => (
-                            <button
-                                key={s.name}
-                                onClick={s.apply}
-                                className="group flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-white hover:border-blue-300 hover:ring-1 hover:ring-blue-300 hover:shadow-md transition-all active:scale-[0.99]"
-                            >
-                                <div className="flex flex-col items-start gap-0.5">
-                                    <span className="text-gray-700 font-semibold text-xs group-hover:text-blue-700">{s.name}</span>
-                                    <span className="text-[10px] text-gray-400">{s.description}</span>
-                                </div>
-                                <Check size={14} className="text-gray-200 group-hover:text-blue-500 transition-colors" />
-                            </button>
-                        ))}
+                {activeProcess === 'ORCHESTRATOR' && (
+                    <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-xs leading-relaxed border border-blue-100">
+                        El <strong>Orquestador</strong> está escuchando. <br />
+                        Escribe algo en el chat para detectar la intención y activar el panel correspondiente.
                     </div>
-                </SectionCard>
+                )}
 
-                {/* Flags Section */}
-                <SectionCard title="Estado del Servicio" icon={Activity}>
-                    <PropertyRow label="Stop Solicitado" description="stop_delivery.requested">
-                        <Switch
-                            checked={mocks.stop_delivery.requested}
-                            onChange={(v) => {
-                                updateMultipleMocks([
-                                    { path: ['stop_delivery', 'requested'], value: v },
-                                    { path: ['get_support_stop_delivery', 'requested'], value: v }
-                                ]);
-                            }}
-                        />
-                    </PropertyRow>
+                {/* STOP REPARTO UI */}
+                {activeProcess === 'STOP_REPARTO' && (
+                    <>
+                        <SectionCard title="Escenarios Stop" icon={Layers}>
+                            <div className="grid grid-cols-1 gap-2">
+                                {stopScenarios.map((s) => (
+                                    <button
+                                        key={s.name}
+                                        onClick={s.apply}
+                                        className="group flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-white hover:border-red-300 hover:ring-1 hover:ring-red-300 transition-all"
+                                    >
+                                        <div className="flex flex-col items-start gap-0.5">
+                                            <span className="text-gray-700 font-semibold text-xs group-hover:text-red-700">{s.name}</span>
+                                            <span className="text-[10px] text-gray-400">{s.description}</span>
+                                        </div>
+                                        <Check size={14} className="text-gray-200 group-hover:text-red-500 transition-colors" />
+                                    </button>
+                                ))}
+                            </div>
+                        </SectionCard>
 
-                    <PropertyRow label="Permitir Solicitud" description="can_request_stop_delivery">
-                        <Switch
-                            checked={mocks.get_support_stop_delivery.can_request_stop_delivery}
-                            onChange={(v) => updateMock(['get_support_stop_delivery', 'can_request_stop_delivery'], v)}
-                        />
-                    </PropertyRow>
+                        <SectionCard title="Estado API Stop" icon={Activity}>
+                            <PropertyRow label="Stop Solicitado" description="requested">
+                                <Switch
+                                    color="red"
+                                    checked={mocks.stop_delivery.requested}
+                                    onChange={(v) => {
+                                        updateMultipleMocks([
+                                            { path: ['stop_delivery', 'requested'], value: v },
+                                            { path: ['get_support_stop_delivery', 'requested'], value: v }
+                                        ]);
+                                    }}
+                                />
+                            </PropertyRow>
+                            <PropertyRow label="Permite Cancelar" description="can_cancel">
+                                <Switch
+                                    color="red"
+                                    checked={mocks.get_support_stop_delivery.can_cancel}
+                                    onChange={(v) => updateMock(['get_support_stop_delivery', 'can_cancel'], v)}
+                                />
+                            </PropertyRow>
+                            <PropertyRow label="Facturas Pendientes" description="has_pending_invoices">
+                                <Switch
+                                    color="red"
+                                    checked={!!mocks.get_support_stop_delivery.has_pending_invoices}
+                                    onChange={(v) => updateMock(['get_support_stop_delivery', 'has_pending_invoices'], v)}
+                                />
+                            </PropertyRow>
+                        </SectionCard>
+                    </>
+                )}
 
-                    <PropertyRow label="Permitir Cancelar" description="can_cancel">
-                        <Switch
-                            checked={mocks.get_support_stop_delivery.can_cancel}
-                            onChange={(v) => updateMock(['get_support_stop_delivery', 'can_cancel'], v)}
-                        />
-                    </PropertyRow>
+                {/* REPARTO URGENTE UI */}
+                {activeProcess === 'AVISO_URGENTE' && (
+                    <>
+                        <SectionCard title="Escenarios Urgente" icon={Truck}>
+                            <div className="grid grid-cols-1 gap-2">
+                                {urgentScenarios.map((s) => (
+                                    <button
+                                        key={s.name}
+                                        onClick={s.apply}
+                                        className="group flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-white hover:border-orange-300 hover:ring-1 hover:ring-orange-300 transition-all"
+                                    >
+                                        <div className="flex flex-col items-start gap-0.5">
+                                            <span className="text-gray-700 font-semibold text-xs group-hover:text-orange-700">{s.name}</span>
+                                            <span className="text-[10px] text-gray-400">{s.description}</span>
+                                        </div>
+                                        <Check size={14} className="text-gray-200 group-hover:text-orange-500 transition-colors" />
+                                    </button>
+                                ))}
+                            </div>
+                        </SectionCard>
 
-                    <PropertyRow label="Facturas Pendientes" description="has_pending_invoices">
-                        <Switch
-                            checked={!!mocks.get_support_stop_delivery.has_pending_invoices}
-                            onChange={(v) => updateMock(['get_support_stop_delivery', 'has_pending_invoices'], v)}
-                        />
-                    </PropertyRow>
-                </SectionCard>
+                        <SectionCard title="Configuración" icon={Database}>
+                            <PropertyRow label="Habilitado" description="showUrgentDelivery">
+                                <Switch
+                                    color="green"
+                                    offColor="red"
+                                    checked={mocks.delivery_config?.viewConfiguration.showUrgentDelivery === 'VISIBLE'}
+                                    onChange={(v) => updateMock(['delivery_config', 'viewConfiguration', 'showUrgentDelivery'], v ? 'VISIBLE' : 'HIDDEN')}
+                                />
+                            </PropertyRow>
+                            <PropertyRow label="Facturas Pendientes" description="facturas_pendientes">
+                                <Switch
+                                    color="orange"
+                                    checked={mocks.delivery_info?.facturas_pendientes === 1}
+                                    onChange={(v) => updateMock(['delivery_info', 'facturas_pendientes'], v ? 1 : 0)}
+                                />
+                            </PropertyRow>
+                            <PropertyRow label="Pedido Activo" description="current_order != null">
+                                <Switch
+                                    color="orange"
+                                    checked={!!mocks.delivery_info?.current_order}
+                                    onChange={(v) => {
+                                        if (v) {
+                                            updateMock(['delivery_info', 'current_order'], { documentNumber: "123", products: [] });
+                                        } else {
+                                            updateMock(['delivery_info', 'current_order'], undefined);
+                                        }
+                                    }}
+                                />
+                            </PropertyRow>
+                        </SectionCard>
+                    </>
+                )}
 
-                {/* Options Section */}
-                <SectionCard title="Opciones (Feature Flags)" icon={Database}>
-                    {mocks.get_support_stop_delivery.options.map((opt, idx) => (
-                        <PropertyRow key={opt.id} label={opt.title} description={`id: ${opt.id}`}>
-                            <Switch
-                                checked={opt.enabled}
-                                onChange={(v) => updateMock(['get_support_stop_delivery', 'options', idx.toString(), 'enabled'], v)}
-                            />
-                        </PropertyRow>
-                    ))}
-                </SectionCard>
-
-
-                {/* Spacer to push content up */}
                 <div className="flex-1 min-h-[20px]" />
 
-                {/* Action Footer */}
                 <div className="sticky bottom-0 z-10 pt-4">
                     <button
                         onClick={onReevaluate}
                         className="flex items-center justify-center gap-2 w-full py-3 px-3 bg-gray-900 text-white rounded-xl text-xs font-bold uppercase tracking-wide hover:bg-black hover:shadow-lg transition-all active:scale-[0.98]"
                     >
                         <RefreshCw size={14} />
-                        Forzar Re-evaluación del Agente
+                        Forzar Re-evaluación
                     </button>
                 </div>
 

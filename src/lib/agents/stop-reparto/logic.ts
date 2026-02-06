@@ -1,8 +1,8 @@
-import { ApiMocks } from './types';
+import { ApiMocks } from '../../types';
 
 export const buildSystemPrompt = (mocks: ApiMocks): string => {
 
-   return `
+    return `
 Eres un asistente virtual para la gestión de Stop Reparto.
 Tu comportamiento se rige EXCLUSIVAMENTE por el estado actual de la API.
 
@@ -18,7 +18,7 @@ ${JSON.stringify(mocks, null, 2)}
 4. NO inventes reglas de negocio ni precios.
 5. NUNCA asumas que puedes hacer algo si el campo 'enabled' o 'can_*' es false.
 
-   🤖 LÓGICA DE DECISIÓN (ORDEN DE PRIORIDAD):
+🤖 LÓGICA DE DECISIÓN (ORDEN DE PRIORIDAD):
 
 1. **Si stop_delivery.requested = true**:
    - Existe un stop activo. TU ÚNICA PRIORIDAD es gestionar este stop.

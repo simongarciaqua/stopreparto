@@ -3,8 +3,12 @@ export interface CustomerState {
     canRequestStopDelivery: boolean;
     canCancelStop: boolean;
     selectedReason: string;
+
     simulatedInconsistency: boolean;
+    activeProcess: 'ORCHESTRATOR' | 'STOP_REPARTO' | 'AVISO_URGENTE';
 }
+
+export type ActiveProcess = 'ORCHESTRATOR' | 'STOP_REPARTO' | 'AVISO_URGENTE';
 
 export interface ApiMocks {
     stop_delivery: {
@@ -34,6 +38,42 @@ export interface ApiMocks {
     };
     post_support_stop_delivery_cancel: {
         success: {
+            message: string;
+        };
+    };
+    // REPARTO URGENTE (REAL) BLOCKS
+    delivery_config?: {
+        viewConfiguration: {
+            showUrgentDelivery: "VISIBLE" | "HIDDEN";
+            isEnabledStopDelivery: "VISIBLE" | "HIDDEN";
+        };
+    };
+    delivery_info?: {
+        products: Array<{
+            productCode: string;
+            productName: string;
+            maxQuantity: number;
+            quantity: number; // Initial/Current quantity
+            description?: string;
+            family: number; // 1=Agua, 2=Cafe, 3=Otros
+            intensity?: number;
+        }>;
+        facturas_pendientes: number; // 1 = blocked
+        faq_url?: string;
+        current_order?: {
+            documentNumber: string;
+            documentDate: string;
+            products: Array<{ id: string; quantity: number }>;
+        };
+    };
+    post_urgent_delivery_response?: {
+        success?: {
+            message: string;
+            documentNumber: number;
+            textMaxDelay: string;
+        };
+        error?: {
+            code: number;
             message: string;
         };
     };
