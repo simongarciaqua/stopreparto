@@ -77,8 +77,7 @@ export async function POST(req: Request) {
         } else {
             // Fallback
             return Response.json({
-                text: "Lo siento, no he podido identificar si quieres gestionar un reparto o dejar un aviso urgente. ¿Me puedes dar más detalles?",
-                agent: 'ORCHESTRATOR'
+                text: "Lo siento, no he podido identificar si quieres gestionar un reparto o dejar un aviso urgente. ¿Me puedes dar más detalles?"
             });
         }
 
@@ -88,8 +87,7 @@ export async function POST(req: Request) {
         // 4. Return in Talkdesk-friendly format
         // Talkdesk often expects a simple "text" field or custom JSON
         return Response.json({
-            text: finalResponse.replace(/\[\[ACTION:.*?\]\]/g, '').trim(),
-            agent: activeAgent
+            text: finalResponse.replace(/\[\[ACTION:.*?\]\]/g, '').trim()
         });
 
     } catch (error: any) {
