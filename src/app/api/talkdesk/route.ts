@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+
 import { buildOrchestratorPrompt } from '@/lib/agents/orchestrator';
 import { buildSystemPrompt as buildStopPrompt } from '@/lib/agents/stop-reparto/logic';
 import { buildSystemPrompt as buildAvisoPrompt } from '@/lib/agents/aviso-urgente/logic';
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
             systemPrompt = buildAvisoPrompt(INITIAL_API_MOCKS);
         } else {
             // Fallback
-            return NextResponse.json({
+            return Response.json({
                 text: "Lo siento, no he podido identificar si quieres gestionar un reparto o dejar un aviso urgente. ¿Me puedes dar más detalles?",
                 agent: 'ORCHESTRATOR'
             });
@@ -87,18 +87,14 @@ export async function POST(req: Request) {
 
         // 4. Return in Talkdesk-friendly format
         // Talkdesk often expects a simple "text" field or custom JSON
-        return NextResponse.json({
+        return Response.json({
             text: finalResponse.replace(/\[\[ACTION:.*?\]\]/g, '').trim(),
-            raw_response: finalResponse,
-            agent: activeAgent,
-            // If there's an action, we could signal it here
-            has_action: finalResponse.includes('[[ACTION:'),
-            action: finalResponse.match(/\[\[ACTION:(.*?)\]\]/)?.[1]
+            agent: activeAgent
         });
 
     } catch (error: any) {
         console.error("Talkdesk Bridge Error:", error);
-        return NextResponse.json({
+        return Response.json({
             error: error.message || "Internal Server Error"
         }, { status: 500 });
     }
