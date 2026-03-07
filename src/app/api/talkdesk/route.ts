@@ -42,11 +42,36 @@ async function callGemini(messages: any[], systemPrompt: string) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        // Support both direct format and Talkdesk interaction format if needed
-        const userMessage = body.message || body.interaction?.message?.text || "Hola";
+
+        // Support multiple input formats:
+        // 1. Direct:   { message: "..." }
+        // 2. Kore.ai playground: { messages: { reason: "..." }, tools: {} }
+        // 3. Kore.ai array format: { messages: [{role: "user", content: "..."}] }
+        // 4. Talkdesk: { interaction: { message: { text: "..." } } }
+        let userMessage: string = "Hola";
+        if (typeof body.message === 'string') {
+            userMessage = body.message;
+        } else if (typeof body.reason === 'string') {
+            userMessage = body.reason;
+        } else if (body.messages) {
+            if (typeof body.messages === 'string') {
+                userMessage = body.messages;
+            } else if (typeof body.messages?.reason === 'string') {
+                // Kore.ai playground format: { messages: { reason: "..." } }
+                userMessage = body.messages.reason;
+            } else if (Array.isArray(body.messages) && body.messages.length > 0) {
+                // Array of message objects
+                const last = body.messages[body.messages.length - 1];
+                userMessage = last?.content || last?.text || last?.message || "Hola";
+            }
+        } else if (body.interaction?.message?.text) {
+            userMessage = body.interaction.message.text;
+        }
+
         let activeAgent = body.agent || 'ORCHESTRATOR';
 
-        console.log(`[Talkdesk API] Received: "${userMessage}" | Agent: ${activeAgent}`);
+        console.log(`[Talkdesk API] Raw body:`, JSON.stringify(body));
+        console.log(`[Talkdesk API] Resolved message: "${userMessage}" | Agent: ${activeAgent}`);
 
         let systemPrompt = "";
         let finalResponse = "";
