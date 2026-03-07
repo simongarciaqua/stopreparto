@@ -39,9 +39,31 @@ async function callGemini(messages: any[], systemPrompt: string) {
     return data.candidates?.[0]?.content?.parts?.[0]?.text;
 }
 
+// CORS headers required for kore.ai playground (browser-based calls)
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handle CORS preflight
+export async function OPTIONS() {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
+        // Bulletproof body parsing: handle empty/invalid bodies gracefully
+        let body: any = {};
+        try {
+            const text = await req.text();
+            if (text && text.trim()) {
+                body = JSON.parse(text);
+            }
+        } catch {
+            // If body is unparseable, continue with empty body (defaults will apply)
+            console.warn('[Talkdesk API] Could not parse request body, using defaults');
+        }
 
         // Support multiple input formats:
         // 1. Direct:   { message: "..." }
@@ -103,7 +125,7 @@ export async function POST(req: Request) {
             // Fallback
             return Response.json({
                 text: "Lo siento, no he podido identificar si quieres gestionar un reparto o dejar un aviso urgente. ¿Me puedes dar más detalles?"
-            });
+            }, { headers: CORS_HEADERS });
         }
 
         // 3. Call Final Agent
@@ -113,12 +135,12 @@ export async function POST(req: Request) {
         // Talkdesk often expects a simple "text" field or custom JSON
         return Response.json({
             text: finalResponse.replace(/\[\[ACTION:.*?\]\]/g, '').trim()
-        });
+        }, { headers: CORS_HEADERS });
 
     } catch (error: any) {
         console.error("Talkdesk Bridge Error:", error);
         return Response.json({
             error: error.message || "Internal Server Error"
-        }, { status: 500 });
+        }, { status: 500, headers: CORS_HEADERS });
     }
 }
